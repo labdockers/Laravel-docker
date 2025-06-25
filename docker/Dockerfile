@@ -53,10 +53,6 @@ RUN mkdir -p /var/log/nginx \
     && mkdir -p /var/log/php-fpm \
     && mkdir -p /var/log/supervisor
 
-# Set environment variables
-ENV APP_ENV=development
-ENV APP_DEBUG=true
-
 # Expose ports
 EXPOSE 9000 80 443 5173
 
