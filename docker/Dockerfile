@@ -4,26 +4,43 @@ FROM php:8.3.0-fpm
 ARG user
 ARG uid
 
-# Install system dependencies
+# Install system dependencies FIRST
 RUN apt-get update && apt-get install -y \
-    git \
     curl \
+    zip \
+    unzip \
+    git \
+    libpq-dev \
+    postgresql-server-dev-all \
+    libjpeg-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    zip \
-    unzip
+    libzip-dev \
+    libfreetype6-dev \
+    libssl-dev \
+    libzstd-dev
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# Configure PHP extensions (só as que precisam de configuração específica)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd sockets
+# Install PHP extensions (pdo_pgsql não precisa de configuração no PHP 8.3)
+RUN docker-php-ext-install -j$(nproc) \
+    pdo \
+    pdo_mysql \
+    pdo_pgsql \
+    gd \
+    bcmath \
+    opcache \
+    mbstring \
+    intl \
+    exif \
+    sockets \
+    pcntl \
+    zip
 
-# Install Redis extension - refer to latest releases: https://github.com/phpredis/phpredis/tags
-RUN apt-get update && apt-get install -y \
-    libzstd-dev && \
-    curl -L -o /tmp/redis.tar.gz https://github.com/phpredis/phpredis/archive/6.2.0.tar.gz \
+# Install Redis extension
+RUN curl -L -o /tmp/redis.tar.gz https://github.com/phpredis/phpredis/archive/6.2.0.tar.gz \
     && tar xfz /tmp/redis.tar.gz -C /tmp \
     && rm -r /tmp/redis.tar.gz \
     && mkdir -p /usr/src/php/ext/redis \
@@ -31,34 +48,37 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /tmp/phpredis-6.2.0 \
     && docker-php-ext-install redis
 
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Para alterar o caminho da versão LTS do node acessar essa página
-# https://github.com/nodesource/distributions#debmanual
+# Install Node.js
 RUN curl -sL https://deb.nodesource.com/setup_22.x | bash -
 RUN apt-get update && apt-get install -y nodejs
-
-# Instalar a versão mais recente do NPM
 RUN curl -qL https://www.npmjs.com/install.sh | sh
-RUN apt-get update
 
-# Create system user to run Composer and Artisan Commands
-RUN useradd -G www-data,root -u $uid -d /home/$user $user
-RUN mkdir -p /home/$user/.composer && \
-    chown -R $user:$user /home/$user
+# Copy Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Create system user
+RUN useradd -G www-data,root -u ${uid} -d /home/${user} ${user}
+RUN mkdir -p /home/${user}/.composer && \
+    chown -R ${user}:${user} /home/${user}
 
 
-# Quando entrar no container, esse vai ser pasta principal que ele vai entrar
+# Set working directory
 WORKDIR /var/www
-# Aqui vai remover a pasta html
-RUN rm -rf /var/www/html
 
+# Create log directories
+RUN mkdir -p /var/log/nginx \
+    && mkdir -p /var/log/php-fpm \
+    && mkdir -p /var/log/supervisor
 
-# Liberar porta 9000 para iniciar o php-fpm server
-EXPOSE 9000
-EXPOSE 443
-EXPOSE 80
-EXPOSE 5173
+# Set environment variables
+ENV APP_ENV=development
+ENV APP_DEBUG=true
 
-USER $user
+# Expose ports
+EXPOSE 9000 80 443 5173
+
+# Switch to non-root user
+USER ${user}
