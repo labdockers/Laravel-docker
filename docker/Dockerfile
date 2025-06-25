@@ -6,53 +6,33 @@ ARG uid
 
 # Install system dependencies FIRST
 RUN apt-get update && apt-get install -y \
-    curl \
-    zip \
-    unzip \
     git \
-    libpq-dev \
-    postgresql-server-dev-all \
-    libjpeg-dev \
+    curl \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    libzip-dev \
-    libfreetype6-dev \
-    libssl-dev \
-    libzstd-dev
-
-# Configure PHP extensions (só as que precisam de configuração específica)
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+    zip \
+    unzip
 
 # Install PHP extensions (pdo_pgsql não precisa de configuração no PHP 8.3)
 RUN docker-php-ext-install -j$(nproc) \
-    pdo \
     pdo_mysql \
-    pdo_pgsql \
     gd \
     bcmath \
-    opcache \
     mbstring \
-    intl \
     exif \
     sockets \
-    pcntl \
-    zip
+    pcntl
 
-# Install Redis extension
-RUN curl -L -o /tmp/redis.tar.gz https://github.com/phpredis/phpredis/archive/6.2.0.tar.gz \
-    && tar xfz /tmp/redis.tar.gz -C /tmp \
-    && rm -r /tmp/redis.tar.gz \
-    && mkdir -p /usr/src/php/ext/redis \
-    && mv /tmp/phpredis-6.2.0/* /usr/src/php/ext/redis \
-    && rm -rf /tmp/phpredis-6.2.0 \
-    && docker-php-ext-install redis
+# Install Redis extension if use phpredis in development, case use predis not need
+#RUN pecl install redis \
+#    && docker-php-ext-enable redis
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js
-RUN curl -sL https://deb.nodesource.com/setup_22.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt-get update && apt-get install -y nodejs
 RUN curl -qL https://www.npmjs.com/install.sh | sh
 
