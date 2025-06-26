@@ -7,6 +7,14 @@
 - Uma estrutura completa para criar um ambiente no docker para se trabalhar com Laravel. 
 - Essa estrutura inicial é excelente para desenvolver uma SPA com Laravel ou ambiente para API em localhost
 
+# ESTRUTURA
+ * [Laravel](https://laravel.com)
+ * [nginx:latest](https://hub.docker.com/_/nginx) - [versions](https://nginx.org/en/CHANGES)
+ * [php:8.3-fpm](https://hub.docker.com/_/php)
+ * [redis:latest](https://hub.docker.com/_/redis)
+ * [phpmyadmin:latest](https://hub.docker.com/_/phpmyadmin)
+ * [Mysql 8.0](https://hub.docker.com/_/mysql)
+ * [Node 20 LTS](https://github.com/nodesource/distributions#debmanual)
 
 
 ### AMBIENTE LOCAL COM DOCKER
